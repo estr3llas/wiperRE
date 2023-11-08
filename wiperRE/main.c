@@ -40,6 +40,28 @@ int main(int argc, char* argv[]) {
 
 int GetFullDevPath(WCHAR currentDrive) {
 
+	LPWSTR dosQueryResult = (LPWSTR)malloc(260 * sizeof(WCHAR));
+
+	if (dosQueryResult == NULL) {
+		return 0;
+	}
+
+	DWORD msDosDevName = QueryDosDeviceW((LPCWSTR)currentDrive, &dosQueryResult, 260);
+
+	if (msDosDevName < 3 || dosQueryResult[0] != L'\\' || dosQueryResult[1] != L'?' || dosQueryResult[2] != L'?') {
+		free(dosQueryResult);
+		return 0;
+	}
+
+	UINT volFlags[2];
+	int volInfo = GetVolumeInformationW(&currentDrive, NULL, 0, NULL, NULL, volFlags, NULL, 0);
+	if (volInfo == 0 || (volFlags[0] & 0x80000) == 0) {
+		free(dosQueryResult);
+		return 0;
+	}
+
+	free(dosQueryResult);
+	return 1;
 }
 
 void Wipe(ULONGLONG driveToWipe) {
